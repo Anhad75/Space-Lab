@@ -1,17 +1,23 @@
 // Telemetry readouts for the active scenario at the cursor time, and the comparison table.
 import { upcoming } from "../lib/geometry.js";
 import { fmtDuration, fmtPct, fmtUTC } from "../lib/format.js";
-import { verdict } from "../lib/scenario.js";
 
 const ICONS = {
   good: <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2 6.3l2.6 2.6L10 3.4" stroke="currentColor" strokeWidth="1.8" fill="none" /></svg>,
   warning: <svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1.2l5 9.6H1z" stroke="currentColor" strokeWidth="1.4" fill="none" /><path d="M6 4.8v2.6M6 8.6v.8" stroke="currentColor" strokeWidth="1.4" /></svg>,
+  serious: <svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 6v5M3.2 3.2a4 4 0 0 0 0 5.6M8.8 3.2a4 4 0 0 1 0 5.6M1.5 1.5a6.4 6.4 0 0 0 0 9M10.5 1.5a6.4 6.4 0 0 1 0 9" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>,
+  poor: <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.8" /></svg>,
   critical: <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.8" /></svg>,
 };
 
-export function Stamp({ score }) {
-  const v = verdict(score);
-  return <span className={`stamp ${v.level}`}>{ICONS[v.level]}{v.label}<b>{score}</b></span>;
+/** Verdict stamp: icon + label (+ score when no hard gate failed). */
+export function Stamp({ verdict: v, reason = false }) {
+  return (
+    <span className="stamp-wrap">
+      <span className={`stamp ${v.status}`}>{ICONS[v.status]}{v.label}{v.score != null && <b>{v.score}</b>}</span>
+      {reason && <span className="stamp-reason">{v.reason}</span>}
+    </span>
+  );
 }
 
 const until = (from, to) => (to == null ? null : (to - from) / 3600e3);
@@ -30,7 +36,7 @@ function Dur({ h }) {
 }
 
 export function Readouts({ result, idx, settings }) {
-  const { ts, m, score } = result;
+  const { ts, m, verdict: v } = result;
   const i = Math.min(idx, ts.t.length - 1);
   const now = ts.t[i];
   const ev = upcoming(ts, i, settings.sustainedHours);
@@ -73,15 +79,16 @@ export function Readouts({ result, idx, settings }) {
       </div>
       <div className="readout">
         <span className="lbl"><span className="eyebrow">Window verdict</span></span>
-        <span style={{ paddingTop: 4 }}><Stamp score={score} /></span>
-        <span className="sub">Sunlit {fmtPct(m.sunlitPct)} · Earth {fmtPct(m.earthPct)}<br />Longest dark {fmtDuration(m.longestDarkH)}</span>
+        <span style={{ paddingTop: 4 }}><Stamp verdict={v} /></span>
+        <span className="sub"><b style={{ color: "var(--ink)", fontWeight: 500 }}>{v.reason}</b><br />Sunlit {fmtPct(m.sunlitPct)} · Earth {fmtPct(m.earthPct)} · dark {fmtDuration(m.longestDarkH)}</span>
       </div>
     </div>
   );
 }
 
 const ROWS = [
-  { k: "score", label: "Viability score", fmt: (v) => v, better: "high", get: (r) => r.score },
+  { k: "verdict", label: "Verdict", get: (r) => r.verdict },
+  { k: "score", label: "Weighted score (if no gate fails)", fmt: (v) => v, better: "high", get: (r) => r.score },
   { k: "sunlit", label: "Time sunlit", fmt: fmtPct, better: "high", get: (r) => r.m.sunlitPct },
   { k: "power", label: "Mean power, % of rating", fmt: (v) => fmtPct(v * 100), better: "high", get: (r) => r.m.meanPower },
   { k: "dark", label: "Longest darkness", fmt: fmtDuration, better: "low", get: (r) => r.m.longestDarkH },
@@ -113,17 +120,20 @@ export function CompareTable({ items }) {
         <tbody>
           {ROWS.map((row) => {
             const vals = ok.map((it) => row.get(it.result, it));
+            // ▲ only when the winner is unique *as displayed* (100% vs 100% is a tie)
             let best = -1;
             if (row.better && ok.length > 1) {
               const pick = row.better === "high" ? Math.max(...vals) : Math.min(...vals);
-              if (vals.filter((v) => v === pick).length === 1) best = vals.indexOf(pick);
+              const shown = vals.map((v) => row.fmt(v));
+              const winner = shown[vals.indexOf(pick)];
+              if (shown.filter((t) => t === winner).length === 1) best = vals.indexOf(pick);
             }
             return (
               <tr key={row.k}>
                 <th>{row.label}</th>
                 {vals.map((v, j) => (
-                  <td key={j} className={j === best && row.k !== "score" ? "best" : ""}>
-                    {row.k === "score" ? <Stamp score={v} /> : row.fmt(v)}
+                  <td key={j} className={j === best ? "best" : ""}>
+                    {row.k === "verdict" ? <Stamp verdict={v} reason /> : row.fmt(v)}
                   </td>
                 ))}
               </tr>

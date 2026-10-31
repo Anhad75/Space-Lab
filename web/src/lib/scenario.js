@@ -2,6 +2,7 @@
 import { metrics, score, siteFrame, timeSeries } from "./geometry.js";
 import { ensureYears, ephemeris, loadBrowserDEM, loadSiteMasks } from "./data.js";
 import { flatMask } from "./terrain.js";
+import { assess } from "./verdict.js";
 
 const DAY = 86400e3;
 
@@ -50,11 +51,6 @@ export async function computeScenario(scn, settings, meta) {
   const ts = timeSeries(ephemeris, f, startMs, endMs, stepMinutesFor(durationDays),
     { mask, commMarginDeg, panel });
   const m = metrics(ts, sustainedHours);
-  return { ts, m, score: score(m, { batteryHours }), mask, heightM, source, startMs, endMs };
-}
-
-export function verdict(s) {
-  if (s >= 70) return { level: "good", label: "Viable" };
-  if (s >= 45) return { level: "warning", label: "Marginal" };
-  return { level: "critical", label: "Poor" };
+  const sc = score(m, { batteryHours });
+  return { ts, m, score: sc, verdict: assess(m, sc, settings), mask, heightM, source, startMs, endMs };
 }

@@ -109,11 +109,15 @@ button, input, select { font: inherit; color: inherit; }
 .stamp.good { color: var(--good); }
 .stamp.warning { color: var(--warning); }
 .stamp.critical { color: var(--critical); }
+.stamp.serious { color: #ec835a; }
+.stamp.poor { color: var(--ink-2); }
+.stamp-wrap { display: inline-flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.stamp-reason { font-size: 11.5px; color: var(--ink-2); white-space: normal; font-family: var(--sans); }
 
 /* ---------- workspace ---------- */
 .work { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100vh - 56px); }
 .controls { border-right: 1px solid var(--line); background: var(--bg-raised); }
-.controls-inner { position: sticky; top: 56px; max-height: calc(100vh - 56px); overflow: auto; }
+
 .ctl { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
 .ctl-head { display: flex; justify-content: space-between; align-items: baseline; }
 .stage { min-width: 0; }
@@ -259,7 +263,6 @@ table.compare { width: 100%; border-collapse: collapse; }
   .tabs { gap: 18px; }
   .work { grid-template-columns: minmax(0, 1fr); }
   .controls { border-right: 0; order: 2; }
-  .controls-inner { position: static; max-height: none; }
   .strip { grid-template-columns: minmax(0, 1fr); }
   .scn { border-right: 0; border-bottom: 1px solid var(--line); }
   .add-scn { padding: 12px 22px; }
@@ -282,3 +285,52 @@ table.compare { width: 100%; border-collapse: collapse; }
 .chart-wrap svg text { font-family: var(--mono); }
 .chart-wrap svg text.sans { font-family: var(--sans); }
 .map svg text { font-family: var(--mono); letter-spacing: .02em; }
+
+/* ---------- assumptions bar ---------- */
+.assume {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; align-items: end;
+  padding: 14px 28px; border-bottom: 1px solid var(--line); background: var(--bg-raised);
+  position: sticky; top: 56px; z-index: 10;
+}
+.assume select, .assume input[type="number"] { padding: 6px 8px; }
+.unit-input { position: relative; display: block; }
+.unit-input input { padding-right: 46px !important; }
+.unit-input i { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--ink-3); pointer-events: none; }
+
+/* ---------- replays ---------- */
+.replays { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.replay { all: unset; box-sizing: border-box; cursor: pointer; border: 1px solid var(--line-strong); border-radius: var(--r); padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.replay .mono { font-size: 10.5px; color: var(--ink-3); }
+.replay:hover { border-color: var(--sun); }
+.replay:hover span:first-child { color: var(--sun); }
+.link-btn { all: unset; cursor: pointer; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.link-btn:hover { color: var(--sun); }
+
+/* ---------- modal ---------- */
+.modal { position: fixed; inset: 0; z-index: 50; background: #000000c0; backdrop-filter: blur(4px); display: grid; place-items: center; padding: 20px; }
+.modal-body { width: min(86vh, 900px, 100%); background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r); padding: 16px; }
+
+@media (max-width: 1280px) {
+  .assume { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .assume { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px 16px; }
+}
+.pano { cursor: grab; touch-action: pan-y; } .pano:active { cursor: grabbing; }
+
+/* ---------- sweep detail ---------- */
+.hscroll { overflow-x: auto; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 14px; cursor: pointer; }
+.toggle input { accent-color: var(--good); }
+.detail { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: 32px; }
+.detail h3 { font-size: 28px; margin: 6px 0 4px; }
+.detail-main .btn { margin-top: 10px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 0 0 12px; font-size: 13px; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; font-family: var(--mono); }
+.detail-col .compare th, .detail-col .compare td { padding: 7px 10px; }
+.compare tr.sel { background: var(--bg-hover); }
+.compare tr.sel th { color: var(--ink); }
+@media (max-width: 900px) {
+  .detail { grid-template-columns: 1fr; }
+}

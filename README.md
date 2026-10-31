@@ -55,6 +55,16 @@ cd pipeline
 python build_ephemeris.py && python optimize_sites.py && python build_horizons.py && python build_map.py && python build_reference.py
 ```
 
+## Verdict rules
+
+Hard gates are checked first, so good numbers elsewhere can never hide a mission-ending problem:
+
+1. **Fails**: the longest darkness in the window is longer than the battery can survive (default 50 h).
+2. **Needs relay**: Earth is never in view, or the longest comm blackout exceeds the limit (default 72 h).
+3. Otherwise the weighted score decides: **Viable** ≥ 70, **Marginal** ≥ 45, else **Poor**.
+
+Every verdict shows its reason (e.g. "2 d 22 h night > 50 h battery").
+
 ## Assumptions
 
 - "Sunlit" = at least half of the solar disk above the terrain; eclipses by Earth included.

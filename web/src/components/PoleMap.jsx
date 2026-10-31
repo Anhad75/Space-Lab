@@ -27,12 +27,43 @@ const ringR = (lat) => {
   return p ? (0.5 - p.fy) * 100 : null;
 };
 
-export default function PoleMap({ sites, scenarios, activeKey, onPick }) {
+export default function PoleMap({ sites, scenarios, activeKey, onPick, compact = false }) {
   const [hover, setHover] = useState(null);
   const pos = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     return { fx: (e.clientX - r.left) / r.width, fy: (e.clientY - r.top) / r.height };
   };
+  // Greedy label placement: scenario sites first, then the catalogue; try right,
+  // left, above, below; drop a label rather than let it overlap another.
+  const fs = compact ? 3.6 : 2.3;
+  const labels = [];
+  const boxes = [];
+  const shortName = (n) => n.replace(/ \(.*\)/, "").replace(" crater floor", "");
+  const candidates = [
+    ...scenarios.map((sc) => ({ id: `scn-${sc.key}`, site: sc.site, color: sc.color })),
+    ...sites.map((s) => ({ id: s.id, site: s })),
+  ];
+  const seen = new Set();
+  for (const c of candidates) {
+    if (seen.has(c.site.id)) continue;
+    seen.add(c.site.id);
+    const p = toMap(c.site.lat, c.site.lon);
+    if (!p) continue;
+    const text = c.site.custom ? "Custom" : shortName(c.site.name);
+    const w = text.length * fs * 0.6, h = fs * 1.1, x = p.fx * 100, y = p.fy * 100, g = Math.max(fs * 0.7, 3);
+    const tries = [
+      { anchor: "start", bx: x + g, by: y - h / 2, tx: x + g, ty: y + fs * 0.35 },
+      { anchor: "end", bx: x - g - w, by: y - h / 2, tx: x - g, ty: y + fs * 0.35 },
+      { anchor: "middle", bx: x - w / 2, by: y - g - h, tx: x, ty: y - g - fs * 0.2 },
+      { anchor: "middle", bx: x - w / 2, by: y + g, tx: x, ty: y + g + fs * 0.85 },
+    ];
+    const fit = tries.find((t) => t.bx >= 1 && t.bx + w <= 99 && t.by >= 6 && t.by + h <= 99
+      && !boxes.some((b) => t.bx < b.x + b.w && t.bx + w > b.x && t.by < b.y + b.h && t.by + h > b.y));
+    if (!fit) continue;
+    boxes.push({ x: fit.bx, y: fit.by, w, h });
+    labels.push({ id: c.id, text, x: fit.tx, y: fit.ty, anchor: fit.anchor, color: c.color });
+  }
+
   return (
     <div>
       <div className="map"
@@ -54,19 +85,13 @@ export default function PoleMap({ sites, scenarios, activeKey, onPick }) {
           <text x="50" y="3.5" fontSize="2.8" fill="#ffffffd0" textAnchor="middle">0° · EARTH-FACING</text>
           <text x="97" y="51" fontSize="2.8" fill="#ffffffb0" textAnchor="end">90°E</text>
           <text x="3" y="51" fontSize="2.8" fill="#ffffffb0">90°W</text>
-          {sites.map((s, k) => {
+          {sites.map((s) => {
             const p = toMap(s.lat, s.lon);
             if (!p) return null;
-            // drop a label that would collide with an earlier one (pins stay)
-            const crowded = sites.slice(0, k).some((o) => {
-              const q = toMap(o.lat, o.lon);
-              return q && Math.abs(q.fy - p.fy) < 0.025 && Math.abs(q.fx - p.fx) < 0.2;
-            });
             return (
-              <g key={s.id}>
-                <circle cx={p.fx * 100} cy={p.fy * 100} r="1" fill="#0b0d12" stroke="#eceae4" strokeWidth="0.45" />
-                {!crowded && <text x={p.fx * 100 + 1.7} y={p.fy * 100 + 0.9} fontSize="2.5" fill="#eceae4" stroke="#0b0d12" strokeWidth="0.5" paintOrder="stroke">{s.name.replace(/ \(.*\)/, "")}</text>}
-              </g>
+              <circle key={s.id} cx={p.fx * 100} cy={p.fy * 100} r={compact ? 1.3 : 0.9} fill="#0b0d12" stroke="#eceae4" strokeWidth="0.45">
+                <title>{s.name}</title>
+              </circle>
             );
           })}
           {scenarios.map((sc) => {
@@ -77,6 +102,10 @@ export default function PoleMap({ sites, scenarios, activeKey, onPick }) {
                 fill="none" stroke={sc.color} strokeWidth={sc.key === activeKey ? 0.9 : 0.6} />
             );
           })}
+          {labels.map((l) => (
+            <text key={l.id} x={l.x} y={l.y} fontSize={fs} textAnchor={l.anchor} fill={l.color || "#eceae4"}
+              stroke="#08090b" strokeWidth={fs * 0.22} paintOrder="stroke">{l.text}</text>
+          ))}
         </svg>
       </div>
       <div className="map-readout" style={{ marginTop: 8 }}>

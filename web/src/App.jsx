@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadSites } from "./lib/data.js";
 import { computeScenario, stepMinutesFor } from "./lib/scenario.js";
 import { fmtUTC, fmtLatLon, fmtDuration } from "./lib/format.js";
-import Controls from "./components/Sidebar.jsx";
+import Controls, { AssumptionsBar } from "./components/Sidebar.jsx";
 import Panorama from "./components/Panorama.jsx";
 import Timeline from "./components/Timeline.jsx";
 import { CompareTable, Readouts, Stamp } from "./components/Metrics.jsx";
@@ -15,7 +15,7 @@ const DAY = 86400e3;
 const DEFAULT_START = Date.UTC(2027, 7, 16, 0, 0);
 
 const DEFAULT_SETTINGS = {
-  durationDays: 14, mastIdx: 1, panel: "vertical", commMarginDeg: 1, sustainedHours: 6, batteryHours: 50,
+  durationDays: 14, mastIdx: 1, panel: "vertical", commMarginDeg: 1, sustainedHours: 6, batteryHours: 50, maxBlackoutHours: 72,
 };
 const TABS = [["plan", "Plan & compare"], ["sweep", "Date sweep"], ["learn", "Why it's hard"]];
 
@@ -40,8 +40,15 @@ function Clock() {
 export default function App() {
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
-  const [tab, setTabState] = useState(() => (TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "plan"));
-  const setTab = (t) => { setTabState(t); history.replaceState(null, "", `#${t}`); };
+  const tabFromHash = () => (TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "plan");
+  const [tab, setTabState] = useState(tabFromHash);
+  const setTab = (t) => { if (location.hash !== `#${t}`) location.hash = t; setTabState(t); };
+  // back/forward buttons and links like #sweep in slides
+  useEffect(() => {
+    const onHash = () => { setTabState(tabFromHash()); window.scrollTo(0, 0); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [scenarios, setScenarios] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
@@ -183,7 +190,7 @@ export default function App() {
                   </span>
                   <span className="scn-name">{sc.site.name}</span>
                   <span className="scn-date">{fmtUTC(sc.startMs)} UTC</span>
-                  <span>{r?.ts ? <Stamp score={r.score} /> : <span className="hint">{r?.error ? "No data" : "Computing…"}</span>}</span>
+                  {r?.ts ? <Stamp verdict={r.verdict} reason /> : <span className="hint">{r?.error ? "No data" : "Computing…"}</span>}
                 </button>
               );
             })}
@@ -192,9 +199,11 @@ export default function App() {
 
           <div className="work">
             <Controls meta={meta} scenario={active} letter={letter(activeKey)} scenarios={colored} activeKey={activeKey}
-              updateScenario={updateScenario} settings={settings} setSettings={setSettings} result={activeRes} />
+              updateScenario={updateScenario} setSettings={setSettings} result={activeRes}
+              onReplay={(site, startMs, durationDays) => { updateScenario(activeKey, { site, startMs }); setSettings({ durationDays }); setCursorH(0); }} />
 
             <main className="stage">
+              <AssumptionsBar meta={meta} settings={settings} setSettings={setSettings} />
               <section className="section">
                 <div className="section-head">
                   <span className="idx">01</span>
@@ -262,7 +271,7 @@ export default function App() {
           </div>
         </>
       )}
-      {tab === "sweep" && <SweepView meta={meta} settings={settings} scenarios={colored} onOpen={openFromSweep} />}
+      {tab === "sweep" && <SweepView meta={meta} settings={settings} setSettings={setSettings} scenarios={colored} onOpen={openFromSweep} />}
       {tab === "learn" && <LearnView meta={meta} />}
     </div>
   );

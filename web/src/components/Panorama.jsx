@@ -25,6 +25,10 @@ export default function Panorama({ result, idx, height = 330 }) {
   const [hover, setHover] = useState(null);
   const geomRef = useRef(null);
   const stars = useMemo(() => makeStars(260), []);
+  // view centre azimuth: automatic (Earth) unless the user drags the panorama
+  const [userCenter, setUserCenter] = useState(null);
+  const drag = useRef(null);
+  useEffect(() => setUserCenter(null), [result?.mask]);
 
   useEffect(() => {
     const cv = canvasRef.current;
@@ -44,10 +48,28 @@ export default function Panorama({ result, idx, height = 330 }) {
     }
     lo = Math.max(-12, Math.floor(lo - 1));
     hi = Math.min(90, Math.ceil(hi + 2));
-    const X = (az) => PAD.l + (az / 360) * W;
+    // Centre on Earth's mean azimuth so it never splits at the seam; on the far
+    // side (Earth never in view) centre on the Sun at its highest instead.
+    let autoCenter;
+    let ex = 0, ey = 0, earthUp = false;
+    for (let i = 0; i < n; i++) {
+      if (!ts.valid[i]) continue;
+      ex += Math.cos(ts.earthAz[i] * Math.PI / 180); ey += Math.sin(ts.earthAz[i] * Math.PI / 180);
+      if (ts.earthEl[i] > lo) earthUp = true;
+    }
+    if (earthUp) autoCenter = (Math.atan2(ey, ex) * 180 / Math.PI + 360) % 360;
+    else {
+      let best = 0;
+      for (let i = 1; i < n; i++) if (ts.sunEl[i] > ts.sunEl[best]) best = i;
+      autoCenter = ts.sunAz[best];
+    }
+    const center = userCenter ?? autoCenter;
+    const left = center - 180;
+    const rel = (az) => (((az - left) % 360) + 360) % 360;
+    const X = (az) => PAD.l + (rel(az) / 360) * W;
     const Y = (el) => PAD.t + (1 - (el - lo) / (hi - lo)) * H;
     const pxPerDegY = H / (hi - lo), pxPerDegX = W / 360;
-    geomRef.current = { X, Y, lo, hi, W, H, exaggeration: pxPerDegY / pxPerDegX };
+    geomRef.current = { X, Y, lo, hi, W, H, left, center, auto: userCenter == null, exaggeration: pxPerDegY / pxPerDegX };
 
     // sky + stars
     const sky = ctx.createLinearGradient(0, PAD.t, 0, PAD.t + H);
@@ -86,7 +108,7 @@ export default function Panorama({ result, idx, height = 330 }) {
       for (let i = 0; i < n; i++) {
         if (!ts.valid[i] || visible(i) !== on) { pen = false; continue; }
         const x = X(azA[i]), y = Y(elA[i]);
-        if (pen && Math.abs(azA[i] - azA[i - 1]) < 180) ctx.lineTo(x, y);
+        if (pen && Math.abs(rel(azA[i]) - rel(azA[i - 1])) < 180) ctx.lineTo(x, y);
         else ctx.moveTo(x, y);
         pen = true;
       }
@@ -103,12 +125,13 @@ export default function Panorama({ result, idx, height = 330 }) {
     const ridge = () => {
       ctx.beginPath();
       for (let a = 0; a <= mask.length; a++) {
-        const x = X((a / mask.length) * 360), y = Y(mask[a % mask.length]);
+        const x = PAD.l + (a / mask.length) * W;
+        const y = Y(horizonAt(mask, left + (a / mask.length) * 360));
         a ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
       }
     };
     ridge();
-    ctx.lineTo(X(360), PAD.t + H); ctx.lineTo(X(0), PAD.t + H); ctx.closePath();
+    ctx.lineTo(PAD.l + W, PAD.t + H); ctx.lineTo(PAD.l, PAD.t + H); ctx.closePath();
     const ground = ctx.createLinearGradient(0, Y(hi * 0.6), 0, PAD.t + H);
     ground.addColorStop(0, "#3c3d42");
     ground.addColorStop(0.35, "#202125");
@@ -131,8 +154,10 @@ export default function Panorama({ result, idx, height = 330 }) {
     ctx.strokeStyle = "#ffffff30";
     ctx.beginPath(); ctx.moveTo(0, tapeY + 0.5); ctx.lineTo(width, tapeY + 0.5); ctx.stroke();
     ctx.textBaseline = "top"; ctx.textAlign = "center";
-    for (let a = 0; a <= 360; a += 5) {
-      const x = Math.round(X(a)) + 0.5;
+    const first = Math.ceil(left / 5) * 5;
+    for (let t = first; t <= left + 360; t += 5) {
+      const a = ((t % 360) + 360) % 360;
+      const x = Math.round(PAD.l + ((t - left) / 360) * W) + 0.5;
       const major = a % 45 === 0, mid = a % 15 === 0;
       ctx.strokeStyle = major ? "#ffffffaa" : "#ffffff40";
       ctx.beginPath(); ctx.moveTo(x, tapeY); ctx.lineTo(x, tapeY + (major ? 9 : mid ? 6 : 3)); ctx.stroke();
@@ -153,9 +178,9 @@ export default function Panorama({ result, idx, height = 330 }) {
       const y = Y(el);
       const r = Math.max(5.5, rDeg * pxPerDegY);
       // near 0/360 the disk wraps: draw its twin on the other edge too
-      const twin = az < 8 ? az + 360 : az > 352 ? az - 360 : null;
-      if (twin != null) disk(X(twin), y, r, color, lit);
       const x = X(az);
+      if (x < 30) disk(x + W, y, r, color, lit);
+      if (x > W - 30) disk(x - W, y, r, color, lit);
       disk(x, y, r, color, lit);
       label(x, y, r, color, label_, below);
     };
@@ -202,22 +227,37 @@ export default function Panorama({ result, idx, height = 330 }) {
       ctx.fillStyle = sun;
       ctx.fillText(`▼ SUN ${fmtDeg(ts.sunEl[i], 1)}`, X(ts.sunAz[i]), H - 22);
     }
-  }, [result, idx, width, height, stars]);
+  }, [result, idx, width, height, stars, userCenter]);
 
   const onMove = (e) => {
     const g = geomRef.current;
     if (!g || !result) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const az = ((x - PAD.l) / g.W) * 360;
-    if (az < 0 || az > 360 || y > g.H) return setHover(null);
+    if (drag.current) {
+      setUserCenter((((drag.current.center - ((x - drag.current.x) / g.W) * 360) % 360) + 360) % 360);
+      setHover(null);
+      return;
+    }
+    const f = (x - PAD.l) / g.W;
+    if (f < 0 || f > 1 || y > g.H) return setHover(null);
+    const az = (((g.left + f * 360) % 360) + 360) % 360;
     setHover({ x, y, az, hor: horizonAt(result.mask, az) });
   };
+  const onDown = (e) => {
+    const g = geomRef.current;
+    if (!g) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    drag.current = { x: e.clientX - rect.left, center: g.center };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onUp = () => { drag.current = null; };
 
   const exag = geomRef.current?.exaggeration;
   return (
     <div>
-      <div className="chart-wrap" ref={wrapRef} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <div className="chart-wrap pano" ref={wrapRef} onPointerMove={onMove} onPointerDown={onDown} onPointerUp={onUp}
+        onPointerLeave={() => { setHover(null); }} onDoubleClick={() => setUserCenter(null)}>
         <canvas ref={canvasRef} role="img"
           aria-label="Horizon panorama showing terrain, the Sun's path and Earth's path over the mission window" />
         {hover && (
@@ -236,7 +276,10 @@ export default function Panorama({ result, idx, height = 330 }) {
         <span><i style={{ background: "var(--earth)" }} />Earth path, link open</span>
         <span><i style={{ background: "repeating-linear-gradient(90deg,var(--earth) 0 2px,transparent 2px 6px)", opacity: .6 }} />Earth blocked</span>
         <span><i style={{ background: "var(--terrain-edge)", height: 1 }} />Terrain horizon (LOLA)</span>
-        {exag > 1.5 && <span style={{ marginLeft: "auto" }} className="mono">VERTICAL ×{Math.round(exag)}</span>}
+        <span style={{ marginLeft: "auto" }} className="mono">
+          {geomRef.current?.auto ? "CENTRED ON EARTH · " : ""}DRAG TO ROTATE{geomRef.current?.auto ? "" : " · DOUBLE-CLICK TO RESET"}
+          {exag > 1.5 && ` · VERTICAL ×${Math.round(exag)}`}
+        </span>
       </div>
     </div>
   );
