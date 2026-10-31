@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadSites } from "./lib/data.js";
 import { computeScenario, stepMinutesFor } from "./lib/scenario.js";
 import { fmtUTC, fmtLatLon, fmtDuration } from "./lib/format.js";
-import Sidebar from "./components/Sidebar.jsx";
+import Controls from "./components/Sidebar.jsx";
 import Panorama from "./components/Panorama.jsx";
 import Timeline from "./components/Timeline.jsx";
-import { CompareTable, MetricCards } from "./components/Metrics.jsx";
+import { CompareTable, Readouts, Stamp } from "./components/Metrics.jsx";
 import SweepView from "./components/SweepView.jsx";
 import LearnView from "./components/LearnView.jsx";
 
@@ -17,14 +17,30 @@ const DEFAULT_START = Date.UTC(2027, 7, 16, 0, 0);
 const DEFAULT_SETTINGS = {
   durationDays: 14, mastIdx: 1, panel: "vertical", commMarginDeg: 1, sustainedHours: 6, batteryHours: 50,
 };
+const TABS = [["plan", "Plan & compare"], ["sweep", "Date sweep"], ["learn", "Why it's hard"]];
 
 let keySeq = 0;
 const newKey = () => `s${++keySeq}`;
 
+function Clock() {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="clock">
+      <span className="eyebrow">Earth UTC</span>
+      <span className="num">{new Date(now).toISOString().slice(0, 19).replace("T", " ")}</span>
+      <span className="live" aria-hidden="true" />
+    </div>
+  );
+}
+
 export default function App() {
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
-  const [tab, setTabState] = useState(() => (["plan", "sweep", "learn"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "plan"));
+  const [tab, setTabState] = useState(() => (TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "plan"));
   const setTab = (t) => { setTabState(t); history.replaceState(null, "", `#${t}`); };
   const [scenarios, setScenarios] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
@@ -49,15 +65,20 @@ export default function App() {
 
   const setSettings = useCallback((patch) => setSettingsState((s) => ({ ...s, ...patch })), []);
 
+  // colour follows the scenario, not its position
+  const colorOf = useRef(new Map());
   const colored = useMemo(() => {
-    const used = new Map();
-    return scenarios.map((s, i) => {
-      if (!used.has(s.key)) used.set(s.key, COLORS[i % COLORS.length]);
-      return { ...s, color: used.get(s.key) };
+    const taken = new Set([...colorOf.current.entries()].filter(([k]) => scenarios.some((s) => s.key === k)).map(([, c]) => c));
+    return scenarios.map((s) => {
+      if (!colorOf.current.has(s.key)) {
+        const c = COLORS.find((x) => !taken.has(x)) || COLORS[0];
+        colorOf.current.set(s.key, c);
+        taken.add(c);
+      }
+      return { ...s, color: colorOf.current.get(s.key) };
     });
   }, [scenarios]);
 
-  // compute every scenario when it or the settings change
   useEffect(() => {
     if (!meta) return;
     let cancelled = false;
@@ -91,7 +112,7 @@ export default function App() {
     setTab("plan");
   };
 
-  // playback: sweep the whole window in ~20 s
+  // playback: the whole window in ~20 s
   const raf = useRef(0);
   useEffect(() => {
     if (!playing) return;
@@ -113,8 +134,20 @@ export default function App() {
 
   useEffect(() => { setCursorH((h) => Math.min(h, settings.durationDays * 24)); }, [settings.durationDays]);
 
-  if (error) return <div className="loading error">Could not load data: {error}</div>;
-  if (!meta || !activeKey) return <div className="loading">Loading AS75 Lab…</div>;
+  const header = (
+    <header className="topbar">
+      <a className="logo" href="#plan" onClick={(e) => { e.preventDefault(); setTab("plan"); }}>
+        <span className="mark" aria-hidden="true" /><b>AS75</b><i>Lab</i>
+      </a>
+      <nav className="tabs" role="tablist">
+        {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}
+      </nav>
+      <Clock />
+    </header>
+  );
+
+  if (error) return <>{header}<div className="loading error">Could not load data: {error}</div></>;
+  if (!meta || !activeKey) return <>{header}<div className="loading">Loading ephemeris &amp; terrain…</div></>;
 
   const active = colored.find((s) => s.key === activeKey);
   const activeRes = results[activeKey];
@@ -123,82 +156,111 @@ export default function App() {
   const idx = Math.round((cursorH * 60) / stepMin);
   const items = colored.map((s) => ({ key: s.key, color: s.color, site: s.site, label: s.site.name, result: results[s.key] }))
     .filter((it) => it.result?.ts);
+  const letter = (k) => String.fromCharCode(65 + colored.findIndex((s) => s.key === k));
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true" />
-          <div>
-            <h1>AS75 Lab</h1>
-            <p>Lunar landing sites: sunlight, terrain &amp; Earth link</p>
-          </div>
-        </div>
-        <nav className="tabs" role="tablist">
-          {[["plan", "Plan & compare"], ["sweep", "Date sweep"], ["learn", "Why it's hard"]].map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>
-          ))}
-        </nav>
-        <div className="spacer" />
-        <span className="note">NASA SPICE DE440 · LOLA terrain · all times UTC</span>
-      </header>
+      {header}
 
       {tab === "plan" && (
-        <div className="layout">
-          <Sidebar meta={meta} scenarios={colored} activeKey={activeKey} setActive={setActiveKey}
-            updateScenario={updateScenario} addScenario={addScenario} removeScenario={removeScenario}
-            settings={settings} setSettings={setSettings} results={results} />
-          <main className="main">
-            <section className="panel">
-              <div className="panel-head">
-                <h2>
-                  <span className="swatch" style={{ "--scn": active.color, display: "inline-block", marginRight: 8 }} />
-                  {active.site.name}
-                  <span className="sub">{fmtLatLon(active.site.lat, active.site.lon)}{activeRes?.heightM != null && ` · ${Math.round(activeRes.heightM)} m`}</span>
-                </h2>
-                <span className="hint">Sky as seen from the lander, 360° around</span>
-              </div>
-              {activeRes?.error && <p className="error">{activeRes.error}</p>}
-              {ready ? (
-                <>
-                  <Panorama result={activeRes} idx={idx} />
-                  <div className="scrubber">
-                    <button className="btn primary" onClick={() => { if (cursorH >= settings.durationDays * 24) setCursorH(0); setPlaying((p) => !p); }}>
-                      {playing ? "❚❚ Pause" : "▶ Play"}
-                    </button>
-                    <input type="range" min="0" max={settings.durationDays * 24} step={stepMin / 60} value={cursorH}
-                      aria-label="Mission time" onChange={(e) => { setPlaying(false); setCursorH(+e.target.value); }} />
-                    <span className="time">
-                      {fmtUTC(activeRes.ts.t[Math.min(idx, activeRes.ts.t.length - 1)])} UTC · L+{fmtDuration(cursorH)}
-                    </span>
+        <>
+          <div className="strip" style={{ "--n": colored.length }}>
+            <div className="strip-lede">
+              <span className="eyebrow">Mission scenarios</span>
+              <h1>Where and when can a lander see the <em>Sun</em> and talk to Earth?</h1>
+            </div>
+            {colored.map((sc) => {
+              const r = results[sc.key];
+              return (
+                <button key={sc.key} className="scn" style={{ "--c": sc.color }} aria-current={sc.key === activeKey}
+                  onClick={() => setActiveKey(sc.key)}>
+                  <span className="scn-top">
+                    <span className="eyebrow" style={{ color: sc.color }}>Scenario {letter(sc.key)}</span>
+                    {colored.length > 1 && (
+                      <span className="scn-x" role="button" aria-label={`Remove scenario ${letter(sc.key)}`}
+                        onClick={(e) => { e.stopPropagation(); removeScenario(sc.key); }}>×</span>
+                    )}
+                  </span>
+                  <span className="scn-name">{sc.site.name}</span>
+                  <span className="scn-date">{fmtUTC(sc.startMs)} UTC</span>
+                  <span>{r?.ts ? <Stamp score={r.score} /> : <span className="hint">{r?.error ? "No data" : "Computing…"}</span>}</span>
+                </button>
+              );
+            })}
+            {colored.length < 3 && <button className="add-scn" onClick={addScenario}>+ Compare</button>}
+          </div>
+
+          <div className="work">
+            <Controls meta={meta} scenario={active} letter={letter(activeKey)} scenarios={colored} activeKey={activeKey}
+              updateScenario={updateScenario} settings={settings} setSettings={setSettings} result={activeRes} />
+
+            <main className="stage">
+              <section className="section">
+                <div className="section-head">
+                  <span className="idx">01</span>
+                  <h2>Horizon view</h2>
+                  <span className="meta">What a camera on the lander would see, all the way around</span>
+                </div>
+                {activeRes?.error && <p className="error">{activeRes.error}</p>}
+                {ready ? (
+                  <div className="viewport">
+                    <div className="viewport-bar">
+                      <span><b style={{ color: active.color }}>■</b> <b>{active.site.name.toUpperCase()}</b> · {fmtLatLon(active.site.lat, active.site.lon)} · {Math.round(activeRes.heightM)} M</span>
+                      <span>TERRAIN {activeRes.source.toUpperCase()}</span>
+                    </div>
+                    <Panorama result={activeRes} idx={idx} />
+                    <div className="transport">
+                      <button className="play" aria-label={playing ? "Pause" : "Play"}
+                        onClick={() => { if (cursorH >= settings.durationDays * 24) setCursorH(0); setPlaying((p) => !p); }}>
+                        {playing
+                          ? <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="1" width="3" height="10" fill="currentColor" /><rect x="7" y="1" width="3" height="10" fill="currentColor" /></svg>
+                          : <svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 1l8 5-8 5z" fill="currentColor" /></svg>}
+                      </button>
+                      <input type="range" min="0" max={settings.durationDays * 24} step={stepMin / 60} value={cursorH}
+                        aria-label="Mission time" onChange={(e) => { setPlaying(false); setCursorH(+e.target.value); }} />
+                      <span className="num">{fmtUTC(activeRes.ts.t[Math.min(idx, activeRes.ts.t.length - 1)])} UTC</span>
+                      <span className="num elapsed">L+{fmtDuration(cursorH) === "0 m" ? "0" : fmtDuration(cursorH)}</span>
+                    </div>
                   </div>
-                </>
-              ) : !activeRes?.error && <div className="loading">Computing…</div>}
-            </section>
-
-            {ready && (
-              <section className="panel">
-                <h2>At this moment <span className="sub">and over the {settings.durationDays}-day window</span></h2>
-                <MetricCards result={activeRes} idx={idx} settings={settings} />
+                ) : !activeRes?.error && <div className="loading">Computing…</div>}
               </section>
-            )}
 
-            {items.length > 0 && (
-              <section className="panel">
-                <h2>Timeline <span className="sub">aligned on landing time, so different dates compare directly</span></h2>
-                <Timeline items={items} durationDays={settings.durationDays} cursorH={cursorH}
-                  onSeek={(h) => { setPlaying(false); setCursorH(h); }} />
-              </section>
-            )}
+              {ready && (
+                <section className="section">
+                  <div className="section-head">
+                    <span className="idx">02</span>
+                    <h2>Telemetry</h2>
+                    <span className="meta">At the cursor time · verdict covers the full {settings.durationDays}-day window</span>
+                  </div>
+                  <Readouts result={activeRes} idx={idx} settings={settings} />
+                </section>
+              )}
 
-            {items.length > 0 && (
-              <section className="panel">
-                <h2>Side by side <span className="sub">★ = best of the scenarios</span></h2>
-                <CompareTable items={items} />
-              </section>
-            )}
-          </main>
-        </div>
+              {items.length > 0 && (
+                <section className="section">
+                  <div className="section-head">
+                    <span className="idx">03</span>
+                    <h2>Operations timeline</h2>
+                    <span className="meta">Aligned on touchdown, so different dates compare directly</span>
+                  </div>
+                  <Timeline items={items} durationDays={settings.durationDays} cursorH={cursorH}
+                    onSeek={(h) => { setPlaying(false); setCursorH(h); }} />
+                </section>
+              )}
+
+              {items.length > 0 && (
+                <section className="section">
+                  <div className="section-head">
+                    <span className="idx">04</span>
+                    <h2>Side by side</h2>
+                    <span className="meta">▲ marks the best scenario on each line</span>
+                  </div>
+                  <CompareTable items={items} />
+                </section>
+              )}
+            </main>
+          </div>
+        </>
       )}
       {tab === "sweep" && <SweepView meta={meta} settings={settings} scenarios={colored} onOpen={openFromSweep} />}
       {tab === "learn" && <LearnView meta={meta} />}

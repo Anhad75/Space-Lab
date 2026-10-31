@@ -32,9 +32,9 @@ export default function Timeline({ items, durationDays, cursorH, onSeek }) {
         aria-label="Timeline of sunlight and Earth visibility for each scenario">
         {ticks.map((d) => (
           <g key={d}>
-            <line x1={X(d * 24)} x2={X(d * 24)} y1={AXIS_H - 4} y2={height} stroke="#1d2331" />
-            <text x={X(d * 24)} y={12} fill="var(--text-muted)" fontSize="11" textAnchor="middle">
-              {d === 0 ? "Landing" : `Day ${d}`}
+            <line x1={X(d * 24)} x2={X(d * 24)} y1={AXIS_H - 4} y2={height} stroke="#ffffff10" />
+            <text x={X(d * 24)} y={12} fill="var(--ink-3)" fontSize="11" textAnchor="middle">
+              {d === 0 ? "T0" : `+${d}d`}
             </text>
           </g>
         ))}
@@ -46,7 +46,7 @@ export default function Timeline({ items, durationDays, cursorH, onSeek }) {
           const lane = (runs, y, color, kind) => runs.map(([a, b], j) => {
             const x0 = X(a * hPer), x1 = X(b * hPer);
             return (
-              <rect key={`${kind}${j}`} x={x0 + 1} y={y} width={Math.max(1, x1 - x0 - 2)} height={LANE} rx="3" fill={color}
+              <rect key={`${kind}${j}`} x={x0 + 1} y={y} width={Math.max(1, x1 - x0 - 2)} height={LANE} rx="1.5" fill={color}
                 onMouseMove={(e) => {
                   const r = e.currentTarget.ownerSVGElement.getBoundingClientRect();
                   setTip({ x: e.clientX - r.left, y: e.clientY - r.top, kind, a: ts.t[a], b: ts.t[Math.min(b, ts.t.length - 1)], h: (b - a) * hPer, name: it.label });
@@ -56,35 +56,35 @@ export default function Timeline({ items, durationDays, cursorH, onSeek }) {
           });
           return (
             <g key={it.key}>
-              <rect x={0} y={y0} width={4} height={groupH} rx="2" fill={it.color} />
-              <text x={12} y={y0 + LANE / 2 + 4} fill="var(--text-primary)" fontSize="12" fontWeight="600">
+              <rect x={0} y={y0} width={3} height={groupH} fill={it.color} />
+              <text className="sans" x={12} y={y0 + LANE / 2 + 4} fill="var(--ink)" fontSize="13">
                 {it.label.length > 20 ? `${it.label.slice(0, 19)}…` : it.label}
               </text>
-              <text x={12} y={y0 + LANE + GAP + LANE / 2 + 4} fill="var(--text-muted)" fontSize="11">
+              <text x={12} y={y0 + LANE + GAP + LANE / 2 + 4} fill="var(--ink-3)" fontSize="11">
                 {fmtUTC(it.result.startMs, false)}
               </text>
-              <rect x={LABEL_W} y={y0} width={plotW} height={LANE} fill="#161a23" rx="3" />
-              <rect x={LABEL_W} y={y0 + LANE + GAP} width={plotW} height={LANE} fill="#161a23" rx="3" />
+              <rect x={LABEL_W} y={y0} width={plotW} height={LANE} fill="#111215" rx="1.5" />
+              <rect x={LABEL_W} y={y0 + LANE + GAP} width={plotW} height={LANE} fill="#111215" rx="1.5" />
               {lane(m.sunRuns, y0, "var(--sun)", "Sunlight")}
               {lane(m.earthRuns, y0 + LANE + GAP, "var(--earth)", "Earth in view")}
             </g>
           );
         })}
         {cursorH != null && (
-          <line x1={X(cursorH)} x2={X(cursorH)} y1={AXIS_H - 6} y2={height} stroke="#ffffffb0" strokeWidth="1.5" />
+          <line x1={X(cursorH)} x2={X(cursorH)} y1={AXIS_H - 6} y2={height} stroke="var(--sun)" strokeWidth="1.25" />
         )}
       </svg>
       {tip && (
         <div className="tooltip" style={{ left: tip.x, top: tip.y }}>
-          <b>{tip.kind}</b> · {tip.name}<br />
+          <b>{tip.kind.toUpperCase()}</b> <span className="t">· {tip.name}</span><br />
           {fmtUTC(tip.a)} → {fmtUTC(tip.b)} UTC<br />
           Duration <b>{fmtDuration(tip.h)}</b>
         </div>
       )}
       <div className="legend">
-        <span><i style={{ background: "var(--sun)", height: 10 }} />Sunlit (≥ half the Sun's disk above terrain)</span>
-        <span><i style={{ background: "var(--earth)", height: 10 }} />Earth above terrain + comm margin</span>
-        <span className="hint">Gaps are darkness / comm blackouts. Click to move the time cursor.</span>
+        <span><i style={{ background: "var(--sun)", height: 8 }} />Sunlit: at least half the solar disk above terrain</span>
+        <span><i style={{ background: "var(--earth)", height: 8 }} />Earth above terrain + comm margin</span>
+        <span>Gaps are darkness or comm blackouts · click to move the cursor</span>
       </div>
     </div>
   );

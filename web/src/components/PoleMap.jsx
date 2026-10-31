@@ -51,7 +51,7 @@ export default function PoleMap({ sites, scenarios, activeKey, onPick }) {
             const p = toMap(-83.9, lon);
             return <line key={lon} x1="50" y1="50" x2={p ? p.fx * 100 : 50} y2={p ? p.fy * 100 : 50} stroke="#ffffff22" strokeWidth="0.25" />;
           })}
-          <text x="50" y="3.5" fontSize="2.8" fill="#ffffffd0" textAnchor="middle">0° · toward Earth ↑</text>
+          <text x="50" y="3.5" fontSize="2.8" fill="#ffffffd0" textAnchor="middle">0° · EARTH-FACING</text>
           <text x="97" y="51" fontSize="2.8" fill="#ffffffb0" textAnchor="end">90°E</text>
           <text x="3" y="51" fontSize="2.8" fill="#ffffffb0">90°W</text>
           {sites.map((s, k) => {
@@ -79,8 +79,8 @@ export default function PoleMap({ sites, scenarios, activeKey, onPick }) {
           })}
         </svg>
       </div>
-      <div className="hint" style={{ marginTop: 6, minHeight: 18 }}>
-        {hover ? `${fmtLatLon(hover.lat, hover.lon)}: click to analyse this spot` : "Click anywhere to analyse a custom site (live terrain horizon)."}
+      <div className="map-readout" style={{ marginTop: 8 }}>
+        {hover ? `${fmtLatLon(hover.lat, hover.lon)} · CLICK TO ANALYSE` : "CLICK ANYWHERE FOR A LIVE TERRAIN HORIZON"}
       </div>
     </div>
   );

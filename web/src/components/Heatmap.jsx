@@ -14,7 +14,7 @@ export const SWEEP_METRICS = {
   longestDarkH: { label: "Longest darkness", get: (c) => c.longestDarkH, min: 0, max: 360, fmt: fmtDuration, higherIsBetter: false },
 };
 
-const LABEL_W = 170, ROW_H = 26, AXIS_H = 28, PAD_R = 10;
+const LABEL_W = 170, ROW_H = 26, AXIS_H = 28, PAD_R = 104;
 
 export default function Heatmap({ rows, metric, onPick }) {
   const [ref, width] = useWidth();
@@ -38,8 +38,8 @@ export default function Heatmap({ rows, metric, onPick }) {
     ctx.clearRect(0, 0, width, height);
     const cw = plotW / days;
     // month ticks
-    ctx.font = "11px Inter, sans-serif";
-    ctx.fillStyle = "#7f7d76";
+    ctx.font = "10.5px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = "#6b6a65";
     ctx.textBaseline = "middle";
     const start = rows[0].cells.find(Boolean)?.startMs;
     rows[0].cells.forEach((c, d) => {
@@ -53,10 +53,14 @@ export default function Heatmap({ rows, metric, onPick }) {
       }
     });
     if (!start) return;
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#6b6a65";
+    ctx.fillText("VIABLE DAYS", width - 4, 12);
+    ctx.textAlign = "left";
     rows.forEach((r, k) => {
       const y = AXIS_H + k * ROW_H;
-      ctx.fillStyle = "#eceae4";
-      ctx.font = "12px Inter, sans-serif";
+      ctx.fillStyle = "#ecebe5";
+      ctx.font = "13px 'IBM Plex Sans', sans-serif";
       ctx.fillText(r.label.length > 24 ? r.label.slice(0, 23) + "…" : r.label, 0, y + ROW_H / 2);
       r.cells.forEach((c, d) => {
         if (!c) return;
@@ -64,6 +68,16 @@ export default function Heatmap({ rows, metric, onPick }) {
         // 2px surface gap between rows; columns are continuous (a day strip)
         ctx.fillRect(LABEL_W + d * cw, y + 1, Math.ceil(cw), ROW_H - 2);
       });
+      // row summary: days whose mission would be rated Viable
+      const viable = r.cells.filter((c) => c && c.score >= 70).length;
+      const valid = r.cells.filter(Boolean).length;
+      ctx.font = "12px 'IBM Plex Mono', monospace";
+      ctx.textAlign = "right";
+      ctx.fillStyle = viable ? "#ecebe5" : "#6b6a65";
+      ctx.fillText(`${viable}`, width - 50, y + ROW_H / 2);
+      ctx.fillStyle = "#6b6a65";
+      ctx.fillText(`${Math.round((100 * viable) / Math.max(1, valid))}%`, width - 4, y + ROW_H / 2);
+      ctx.textAlign = "left";
     });
   }, [rows, metric, width, height]);
 
@@ -88,21 +102,21 @@ export default function Heatmap({ rows, metric, onPick }) {
           <>
             <div style={{ position: "absolute", left: tip.x, top: AXIS_H, height: height - AXIS_H, width: 1, background: "#ffffff70", pointerEvents: "none" }} />
             <div className="tooltip" style={{ left: tip.x, top: tip.y }}>
-              <b>{tip.row.label}</b> · land {fmtUTC(tip.c.startMs, false)}<br />
+              <b>{tip.row.label}</b> <span className="t">· touchdown {fmtUTC(tip.c.startMs, false)}</span><br />
               Score <b>{tip.c.score}</b> · sunlit <b>{fmtPct(tip.c.sunlitPct)}</b> · Earth <b>{fmtPct(tip.c.earthPct)}</b><br />
               Longest darkness <b>{fmtDuration(tip.c.longestDarkH)}</b><br />
-              <span className="hint">Click to open this scenario</span>
+              <span className="t">Click to open in Plan</span>
             </div>
           </>
         )}
       </div>
-      <div className="legend" style={{ marginTop: 10, alignItems: "center" }}>
+      <div className="legend" style={{ padding: "12px 0 0", alignItems: "center" }}>
         <span>{def.higherIsBetter ? "worse" : "longer (worse)"}</span>
         <span style={{ display: "inline-flex" }}>
-          {RAMP.map((c) => <i key={c} style={{ width: 14, height: 10, background: c, borderRadius: 0 }} />)}
+          {RAMP.map((c) => <i key={c} style={{ width: 16, height: 8, background: c }} />)}
         </span>
         <span>{def.higherIsBetter ? "better" : "shorter (better)"}</span>
-        <span className="hint">{def.label}: {def.fmt(def.min)} → {def.fmt(def.max)}</span>
+        <span className="mono">{def.label.toUpperCase()} · {def.fmt(def.min)} → {def.fmt(def.max)}</span>
       </div>
     </div>
   );
