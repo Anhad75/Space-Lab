@@ -334,3 +334,12 @@ table.compare { width: 100%; border-collapse: collapse; }
 @media (max-width: 900px) {
   .detail { grid-template-columns: 1fr; }
 }
+
+/* ---------- validation ---------- */
+.scatters { flex-direction: row; flex-wrap: wrap; gap: 20px; justify-content: flex-start; }
+.scatter { margin: 0; flex: 1 1 220px; max-width: 280px; }
+.scatter figcaption { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.scatter figcaption .mono { font-size: 11px; color: var(--ink-2); }
+.checks th { font-weight: 400; white-space: normal !important; color: var(--ink-2) !important; }
+.checks th b { color: var(--ink); font-weight: 500; }
+.checks td { color: var(--good); text-align: right; }

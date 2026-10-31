@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ensureYears, ephemeris, loadSiteMasks } from "../lib/data.js";
 import { metrics, siteFrame, timeSeries } from "../lib/geometry.js";
 import { fmtDuration, fmtPct } from "../lib/format.js";
+import Validation from "./Validation.jsx";
 
 const Y0 = Date.UTC(2027, 0, 1), Y1 = Date.UTC(2028, 0, 1);
 
@@ -124,12 +125,14 @@ export default function LearnView({ meta }) {
         <p>The brightest ground is often the steepest. Most landers are designed for slopes below about 8–10°. AS75 Lab reports the slope of every polar site, and the Artemis region points it suggests are the best-lit spots it could find with a slope of <b>8° or less</b>.</p>
       </Chapter>
 
+      <Validation />
+
       <section style={{ padding: "40px 0 0" }}>
         <span className="eyebrow">Method &amp; validation</span>
         <div className="methods" style={{ marginTop: 14 }}>
           <div>
             <h3>Ephemeris</h3>
-            <p>NASA/NAIF SPICE: DE440 planets and lunar orientation, in the MOON_ME frame that LOLA and published coordinates use. Stored hourly for 1969–72 and 2023–32 and interpolated in the browser. <b>Matches JPL Horizons to 0.0001°</b>, and the browser math matches SPICE to 0.0007°.</p>
+            <p>NASA/NAIF SPICE: DE440 planets and lunar orientation, in the MOON_ME frame that LOLA and published coordinates use. Stored hourly for 1969–72 and 2023–32 and interpolated in the browser. <b>Matches JPL Horizons to 0.0001°</b>, and the browser math matches SPICE to 0.0007°. Sunlit and Earth-visible fractions match NASA PGDA maps (r ≈ 0.99).</p>
           </div>
           <div>
             <h3>Terrain</h3>
