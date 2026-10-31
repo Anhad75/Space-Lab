@@ -1,0 +1,260 @@
+{
+ "nAz": 720,
+ "masts": [
+  1.0,
+  2.0,
+  5.0,
+  10.0,
+  20.0,
+  50.0
+ ],
+ "sites": [
+  {
+   "id": "malapert",
+   "name": "Malapert Massif",
+   "group": "Artemis III region",
+   "lat": -85.9678,
+   "lon": -2.4702,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 4978.5,
+   "demStepM": 40.0,
+   "slopeDeg": 6.7
+  },
+  {
+   "id": "mons-mouton",
+   "name": "Mons Mouton",
+   "group": "Artemis III region",
+   "lat": -84.4021,
+   "lon": 31.0,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 5527.7,
+   "demStepM": 40.0,
+   "slopeDeg": 4.1
+  },
+  {
+   "id": "haworth",
+   "name": "Haworth",
+   "group": "Artemis III region",
+   "lat": -86.8669,
+   "lon": -18.4779,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 1631.8,
+   "demStepM": 40.0,
+   "slopeDeg": 2.9
+  },
+  {
+   "id": "nobile-rim",
+   "name": "Nobile Rim",
+   "group": "Artemis III region",
+   "lat": -84.9335,
+   "lon": 38.1326,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 6746.2,
+   "demStepM": 40.0,
+   "slopeDeg": 5.5
+  },
+  {
+   "id": "de-gerlache-rim",
+   "name": "de Gerlache Rim",
+   "group": "Artemis III region",
+   "lat": -88.1358,
+   "lon": -71.6519,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 471.2,
+   "demStepM": 40.0,
+   "slopeDeg": 1.3
+  },
+  {
+   "id": "slater-plain",
+   "name": "Slater Plain",
+   "group": "Artemis III region",
+   "lat": -87.4207,
+   "lon": 113.759,
+   "approx": true,
+   "optimized": true,
+   "note": "Best-lit flat point (slope <= 8 deg) we found within 6 km of an approximate point in this NASA candidate region",
+   "heightM": 405.2,
+   "demStepM": 40.0,
+   "slopeDeg": 1.9
+  },
+  {
+   "id": "connecting-ridge",
+   "name": "Connecting Ridge",
+   "group": "South pole (earlier candidate)",
+   "lat": -89.53432,
+   "lon": 209.94767,
+   "approx": false,
+   "note": "Site from LPSC 2024 abstract; region dropped from the 2024 Artemis III list",
+   "heightM": 1652.4,
+   "demStepM": 40.0,
+   "slopeDeg": 0.3
+  },
+  {
+   "id": "shackleton",
+   "name": "Shackleton crater floor",
+   "group": "South pole",
+   "lat": -89.67,
+   "lon": 129.78,
+   "approx": true,
+   "note": "Permanently shadowed crater floor: shows the extreme case",
+   "heightM": -2788.9,
+   "demStepM": 40.0,
+   "slopeDeg": 0.7
+  },
+  {
+   "id": "im2",
+   "name": "IM-2 Athena (2025)",
+   "group": "Commercial (CLPS)",
+   "lat": -84.7906,
+   "lon": 29.1957,
+   "date": "2025-03-06T17:28:00Z",
+   "heightM": 5321.7,
+   "demStepM": 40.0,
+   "slopeDeg": 2.1
+  },
+  {
+   "id": "im1",
+   "name": "IM-1 Odysseus (2024)",
+   "group": "Commercial (CLPS)",
+   "lat": -80.13,
+   "lon": 1.44,
+   "date": "2024-02-22T23:23:00Z",
+   "heightM": 2594.1,
+   "demStepM": 40.0,
+   "slopeDeg": 12.4
+  },
+  {
+   "id": "ch3",
+   "name": "Chandrayaan-3 Vikram (2023)",
+   "group": "India (ISRO)",
+   "lat": -69.373,
+   "lon": 32.319,
+   "date": "2023-08-23T12:33:00Z",
+   "heightM": 529.0,
+   "demStepM": 240.0
+  },
+  {
+   "id": "luna25",
+   "name": "Luna-25 target (2023)",
+   "group": "Russia",
+   "lat": -69.545,
+   "lon": 43.544,
+   "date": "2023-08-21T00:00:00Z",
+   "note": "Planned site; spacecraft crashed before landing",
+   "heightM": 308.2,
+   "demStepM": 240.0
+  },
+  {
+   "id": "slim",
+   "name": "SLIM (2024)",
+   "group": "Japan (JAXA)",
+   "lat": -13.316,
+   "lon": 25.251,
+   "date": "2024-01-19T15:20:00Z",
+   "heightM": -910.4,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "bg1",
+   "name": "Blue Ghost M1 (2025)",
+   "group": "Commercial (CLPS)",
+   "lat": 18.56,
+   "lon": 61.81,
+   "date": "2025-03-02T08:34:00Z",
+   "heightM": -3645.3,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "ce4",
+   "name": "Chang'e-4 (far side, 2019)",
+   "group": "China (CNSA)",
+   "lat": -45.4446,
+   "lon": 177.5991,
+   "date": "2019-01-03T02:26:00Z",
+   "note": "Far side: Earth is never above the horizon",
+   "heightM": -5928.5,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "ce6",
+   "name": "Chang'e-6 (far side, 2024)",
+   "group": "China (CNSA)",
+   "lat": -41.638,
+   "lon": -153.985,
+   "date": "2024-06-01T22:23:00Z",
+   "note": "Far side: Earth is never above the horizon",
+   "heightM": -5255.4,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a11",
+   "name": "Apollo 11",
+   "group": "Apollo",
+   "lat": 0.67408,
+   "lon": 23.47297,
+   "date": "1969-07-20T20:17:40Z",
+   "heightM": -1921.5,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a12",
+   "name": "Apollo 12",
+   "group": "Apollo",
+   "lat": -3.01239,
+   "lon": -23.42157,
+   "date": "1969-11-19T06:54:35Z",
+   "heightM": -1426.7,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a14",
+   "name": "Apollo 14",
+   "group": "Apollo",
+   "lat": -3.6453,
+   "lon": -17.47136,
+   "date": "1971-02-05T09:18:11Z",
+   "heightM": -1047.9,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a15",
+   "name": "Apollo 15",
+   "group": "Apollo",
+   "lat": 26.13222,
+   "lon": 3.63386,
+   "date": "1971-07-30T22:16:29Z",
+   "heightM": -1938.0,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a16",
+   "name": "Apollo 16",
+   "group": "Apollo",
+   "lat": -8.97301,
+   "lon": 15.50019,
+   "date": "1972-04-21T02:23:35Z",
+   "heightM": 6.9,
+   "demStepM": 1895.2
+  },
+  {
+   "id": "a17",
+   "name": "Apollo 17",
+   "group": "Apollo",
+   "lat": 20.1908,
+   "lon": 30.77168,
+   "date": "1972-12-11T19:54:57Z",
+   "heightM": -2617.1,
+   "demStepM": 1895.2
+  }
+ ]
+}

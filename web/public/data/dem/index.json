@@ -1,0 +1,17 @@
+{
+ "projection": "south polar stereographic, R=1737.4 km; row = center - x/scale, col = center + y/scale, x = 2R*ux/(1-uz), y = 2R*uy/(1-uz)",
+ "layers": [
+  {
+   "file": "south_240m.bin",
+   "n": 1290,
+   "scaleM": 240.0,
+   "center": 644.5
+  },
+  {
+   "file": "south_480m.bin",
+   "n": 2166,
+   "scaleM": 480.0,
+   "center": 1082.5
+  }
+ ]
+}
